@@ -67,17 +67,45 @@ void MainWidget::initializeGL() {
 }
 
 void MainWidget::initShaders() {
-    if (!program.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/vshader.glsl"))
-        close();
+  const char* vertexShaderSource = R"(
+#ifdef GL_ES
+precision mediump int;
+precision mediump float;
+#endif
 
-    if (!program.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/fshader.glsl"))
-        close();
+uniform mat4 mvp_matrix;
+attribute vec4 a_position;
+attribute vec2 a_texcoord;
+varying vec2 v_texcoord;
 
-    if (!program.link())
-        close();
+void main() {
+  gl_Position = mvp_matrix * a_position;
+  v_texcoord = a_texcoord;
+})";
+  const char* fragmentShaderSource = R"(
+#ifdef GL_ES
+precision mediump int;
+precision mediump float;
+#endif
 
-    if (!program.bind())
-        close();
+uniform sampler2D texture;
+varying vec2 v_texcoord;
+
+void main() {
+  gl_FragColor = texture2D(texture, v_texcoord);
+})";
+
+  if (!program.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource))
+    close();
+
+  if (!program.addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource))
+    close();
+
+  if (!program.link())
+    close();
+
+  if (!program.bind())
+    close();
 }
 
 void MainWidget::initTextures() {

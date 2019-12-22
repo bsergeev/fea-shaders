@@ -68,12 +68,6 @@
     <CustomBuild Include="release\moc_predefs.h.cbt">
       <Filter>Generated Files</Filter>
     </CustomBuild>
-    <ClCompile Include="debug\qrc_shaders.cpp">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
-    <ClCompile Include="release\qrc_shaders.cpp">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
     <ClCompile Include="debug\qrc_textures.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
@@ -85,17 +79,8 @@
     <None Include="cube.png">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="fshader.glsl">
-      <Filter>Resource Files</Filter>
-    </None>
-    <CustomBuild Include="shaders.qrc">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
     <CustomBuild Include="textures.qrc">
       <Filter>Resource Files</Filter>
     </CustomBuild>
-    <None Include="vshader.glsl">
-      <Filter>Resource Files</Filter>
-    </None>
   </ItemGroup>
 </Project>

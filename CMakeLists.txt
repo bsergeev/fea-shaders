@@ -21,11 +21,6 @@ set(sources
   src/geometryengine.cpp
   src/main.cpp
   src/mainwidget.cpp
-  
-  src/shaders.qrc
-  src/textures.qrc
-  src/fshader.glsl
-  src/vshader.glsl
 )
 message(STATUS "-> Sources: ${sources}")
 
