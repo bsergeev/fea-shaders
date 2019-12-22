@@ -18,36 +18,36 @@ MainWidget::~MainWidget() {
 }
 
 void MainWidget::mousePressEvent(QMouseEvent* e) {
-  mousePressPosition = QVector2D(e->localPos());
+//  mousePressPosition = QVector2D(e->localPos());
 }
 
 void MainWidget::mouseReleaseEvent(QMouseEvent* e) {
-    // Mouse release position - mouse press position
-    QVector2D diff = QVector2D(e->localPos()) - mousePressPosition;
-
-    // Rotation axis is perpendicular to the mouse position difference
-    // vector
-    QVector3D n = QVector3D(diff.y(), diff.x(), 0.0).normalized();
-
-    // Accelerate angular speed relative to the length of the mouse sweep
-    qreal acc = diff.length() / 100.0;
-
-    // Calculate new rotation axis as weighted sum
-    rotationAxis = (rotationAxis * angularSpeed + n * acc).normalized();
-
-    // Increase angular speed
-    angularSpeed += acc;
+//     // Mouse release position - mouse press position
+//     QVector2D diff = QVector2D(e->localPos()) - mousePressPosition;
+// 
+//     // Rotation axis is perpendicular to the mouse position difference
+//     // vector
+//     QVector3D n = QVector3D(diff.y(), diff.x(), 0.0).normalized();
+// 
+//     // Accelerate angular speed relative to the length of the mouse sweep
+//     qreal acc = diff.length() / 100.0;
+// 
+//     // Calculate new rotation axis as weighted sum
+//     rotationAxis = (rotationAxis * angularSpeed + n * acc).normalized();
+// 
+//     // Increase angular speed
+//     angularSpeed += acc;
 }
 
-void MainWidget::timerEvent(QTimerEvent*) {
-    angularSpeed *= 0.99; // decrease angular speed (friction)
-    if (angularSpeed < 0.01) {
-        angularSpeed = 0.0; // stop rotation when speed goes below threshold
-    } else {
-        rotation = QQuaternion::fromAxisAndAngle(rotationAxis, angularSpeed) * rotation;
-        update();
-    }
-}
+// void MainWidget::timerEvent(QTimerEvent*) {
+//     angularSpeed *= 0.99; // decrease angular speed (friction)
+//     if (angularSpeed < 0.01) {
+//         angularSpeed = 0.0; // stop rotation when speed goes below threshold
+//     } else {
+//         rotation = QQuaternion::fromAxisAndAngle(rotationAxis, angularSpeed) * rotation;
+//         update();
+//     }
+// }
 
 void MainWidget::initializeGL() {
     initializeOpenGLFunctions();
@@ -55,15 +55,14 @@ void MainWidget::initializeGL() {
     glClearColor(0, 0, 0, 1);
 
     initShaders();
-    initTextures();
 
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+//     glEnable(GL_DEPTH_TEST);
+//     glEnable(GL_CULL_FACE);
 
     geometries = new GeometryEngine();
 
     // Use QBasicTimer because its faster than QTimer
-    timer.start(12, this);
+//    timer.start(12, this);
 }
 
 void MainWidget::initShaders() {
@@ -73,14 +72,14 @@ precision mediump int;
 precision mediump float;
 #endif
 
-uniform mat4 mvp_matrix;
-attribute vec4 a_position;
-attribute vec2 a_texcoord;
-varying vec2 v_texcoord;
+uniform   vec4 ScaleParams;
+attribute vec4 aPos;
+attribute vec4 aColor;
+varying   vec3 ourColor;
 
 void main() {
-  gl_Position = mvp_matrix * a_position;
-  v_texcoord = a_texcoord;
+  gl_Position = vec4(ScaleParams.z*aPos.x - ScaleParams.x, ScaleParams.w*aPos.y - ScaleParams.y, aPos.z, 1.0);
+  ourColor = aColor;
 })";
   const char* fragmentShaderSource = R"(
 #ifdef GL_ES
@@ -88,11 +87,9 @@ precision mediump int;
 precision mediump float;
 #endif
 
-uniform sampler2D texture;
-varying vec2 v_texcoord;
-
+varying vec3 ourColor;
 void main() {
-  gl_FragColor = texture2D(texture, v_texcoord);
+  gl_FragColor = vec4(ourColor, 1.0f);
 })";
 
   if (!program.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource))
@@ -108,50 +105,29 @@ void main() {
     close();
 }
 
-void MainWidget::initTextures() {
-    texture = new QOpenGLTexture(QImage(":/cube.png").mirrored());
-
-    // Set nearest filtering mode for texture minification
-    texture->setMinificationFilter(QOpenGLTexture::Nearest);
-
-    // Set bilinear filtering mode for texture magnification
-    texture->setMagnificationFilter(QOpenGLTexture::Linear);
-
-    // Wrap texture coordinates by repeating
-    // f.ex. texture coordinate (1.1, 1.2) is same as (0.1, 0.2)
-    texture->setWrapMode(QOpenGLTexture::Repeat);
-}
-
 void MainWidget::resizeGL(int w, int h) {
-    // Calculate aspect ratio
-    qreal aspect = qreal(w) / qreal(h ? h : 1);
-
-    // Set near plane to 3.0, far plane to 7.0, field of view 45 degrees
-    const qreal zNear = 3.0, zFar = 7.0, fov = 45.0;
-
-    // Reset projection
-    projection.setToIdentity();
-
-    // Set perspective projection
-    projection.perspective(fov, aspect, zNear, zFar);
+  int ScrW = w;
+  int ScrH = h;
+  const auto [minX, maxX, minY, maxY] = geometries->getMinMaxCoords();
+  if (ScrW != 0 && ScrH != 0 && (maxX - minX) > 0) {
+    if (ScrH / ScrW < (maxY - minY) / (maxX - minX)) { // height limited
+      CoordScaleY = static_cast<float>(2.0 / (maxY - minY));
+      CoordScaleX = static_cast<float>(CoordScaleY * ScrH / ScrW);
+      YOffset = static_cast<float>((maxY + minY) / (maxY - minY));
+      XOffset = static_cast<float>((maxX + minX) / (maxY - minY) * ScrH / ScrW);
+    } else { // width limited
+      CoordScaleX = static_cast<float>(2.0 / (maxX - minX));
+      CoordScaleY = static_cast<float>(CoordScaleX * ScrW / ScrH);
+      YOffset = static_cast<float>((maxY + minY) / (maxX - minX) * ScrW / ScrH);
+      XOffset = static_cast<float>((maxX + minX) / (maxX - minX));
+    }
+  }
 }
 
 void MainWidget::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    texture->bind();
+    program.setUniformValue("ScaleParams", XOffset, YOffset, CoordScaleX, CoordScaleY);
 
-    // Calculate model view transformation
-    QMatrix4x4 matrix;
-    matrix.translate(0.0, 0.0, -5.0);
-    matrix.rotate(rotation);
-
-    // Set modelview-projection matrix
-    program.setUniformValue("mvp_matrix", projection * matrix);
-
-    // Use texture unit 0 which contains cube.png
-    program.setUniformValue("texture", 0);
-
-    // Draw cube geometry
     geometries->drawCubeGeometry(&program);
 }

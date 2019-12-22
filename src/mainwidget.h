@@ -24,14 +24,14 @@ public:
 protected:
     void mousePressEvent(QMouseEvent *e) override;
     void mouseReleaseEvent(QMouseEvent *e) override;
-    void timerEvent(QTimerEvent *e) override;
+//    void timerEvent(QTimerEvent *e) override;
 
     void initializeGL() override;
     void resizeGL(int w, int h) override;
     void paintGL() override;
 
     void initShaders();
-    void initTextures();
+//    void initTextures();
 
 private:
     QBasicTimer timer;
@@ -40,10 +40,14 @@ private:
     GeometryEngine* geometries = nullptr;
     QOpenGLTexture* texture = nullptr;
 
-    QMatrix4x4  projection;
+    //QMatrix4x4  projection;
+    float XOffset = 0.0f;
+    float YOffset = 0.0f;
+    float CoordScaleX = 1.0f;
+    float CoordScaleY = 1.0f;
 
-    QVector2D   mousePressPosition;
-    QVector3D   rotationAxis;
-    qreal       angularSpeed = 0.0;
-    QQuaternion rotation;
+//     QVector2D   mousePressPosition;
+//     QVector3D   rotationAxis;
+//     qreal       angularSpeed = 0.0;
+//     QQuaternion rotation;
 };
