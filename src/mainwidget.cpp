@@ -73,8 +73,8 @@ precision mediump float;
 #endif
 
 uniform   vec4 ScaleParams;
-attribute vec4 aPos;
-attribute vec4 aColor;
+attribute vec3 aPos;
+attribute vec3 aColor;
 varying   vec3 ourColor;
 
 void main() {

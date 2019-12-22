@@ -2,9 +2,14 @@
 
 # This Bash script works in Linux and Windows (Git Bash).
 
-# Optional parameter for build configuration, Debug (default) or Release
+APP_NAME=ogl
+if [ "$1" != "" ]; then
+  APP_NAME="$1"
+fi
+echo Project name: ${APP_NAME}
+
 BUILD_CONFIGURATION=Debug
-if [ "$1" = "Release" ] || [ "$1" = "Debug" ]; then
+if [ "$2" = "Release" ] || [ "$2" = "Debug" ]; then
   BUILD_CONFIGURATION="$1"
 fi
 
@@ -36,3 +41,6 @@ elif [ "$OS_NAME" = "Windows" ]; then
   cmake -A x64 -DQt5_DIR=c:/Frameworks/Qt/5.13.2/msvc2017_64/lib/cmake/Qt5 -DTARGET_NAME:STRING="$APP_NAME" ..
   cmake --build . --config $BUILD_CONFIGURATION
 fi
+
+cd ..
+$BINARY_LOCATION/$APP_NAME

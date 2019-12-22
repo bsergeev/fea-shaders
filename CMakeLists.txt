@@ -1,9 +1,9 @@
 cmake_minimum_required (VERSION 3.5)
 
-if(NOT TARGET_NAME)
-  set(TARGET_NAME ogl)
+if(NOT APP_NAME)
+  set(APP_NAME ogl)
 endif()
-project(${TARGET_NAME} VERSION 0.0.1 LANGUAGES CXX)
+project(${APP_NAME} VERSION 0.0.1 LANGUAGES CXX)
 
 # Define project_options "library" with all the build options and warnings
 include(cmake/ProjectOptions.cmake)
@@ -30,20 +30,20 @@ if (NOT Qt5_FOUND)
 endif()
 message(STATUS "-> Qt: ${Qt5_DIR}")
 
-add_executable(${TARGET_NAME} ${sources} ${headers})
+add_executable(${APP_NAME} ${sources} ${headers})
 
-target_include_directories(${TARGET_NAME} 
+target_include_directories(${APP_NAME} 
   PRIVATE
     "${include_dirs}"
 )
 
 if (MSVC)
   add_definitions(-D_WIN32_WINNT=0x0601) # Windows 7
-  set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${TARGET_NAME})
+  set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${APP_NAME})
 endif()
 
 if (WIN32 OR WIN64)
-  target_link_libraries(${TARGET_NAME}  project_options
+  target_link_libraries(${APP_NAME}  project_options
     Qt5::Widgets Qt5::OpenGL
     opengl32
   )
@@ -53,7 +53,7 @@ if (WIN32 OR WIN64)
   set(USED_QT_MODULES  Core Gui Widgets OpenGL)
   set (CustomCommands)
   macro(add_copy_commands _file_list)
-    set(_destination $<TARGET_FILE_DIR:${TARGET_NAME}>)
+    set(_destination $<TARGET_FILE_DIR:${APP_NAME}>)
     foreach(_fn ${${_file_list}})
       set(COMMAND ${ARGN} ${CMAKE_COMMAND} -E copy_if_different ${_fn} ${_destination} "\n")
       list(APPEND CustomCommands ${COMMAND})
@@ -72,11 +72,11 @@ if (WIN32 OR WIN64)
   add_copy_commands(Optimized_Resources if $<CONFIGURATION> == Release)
   
   # Finally create the custom command as a post-build step.
-  add_custom_command(TARGET ${TARGET_NAME} POST_BUILD COMMAND ${CustomCommands})
+  add_custom_command(TARGET ${APP_NAME} POST_BUILD COMMAND ${CustomCommands})
   #-----------------------------------------------------------------------------
 else() # Linux
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") #  -stdlib=libc++
-  target_link_libraries(${TARGET_NAME} project_options 
+  target_link_libraries(${APP_NAME} project_options 
     Qt5::Widgets Qt5::OpenGL
     # c++ c++abi pthread
   )
