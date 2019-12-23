@@ -1,7 +1,9 @@
 #include "mainwidget.h"
+#include "geometryengine.h"
 
 #include <QMouseEvent>
 
+#include <iostream> // <<< DEBUG
 #include <math.h>
 
 MainWidget::MainWidget(QWidget* parent)
@@ -10,44 +12,10 @@ MainWidget::MainWidget(QWidget* parent)
 }
 
 MainWidget::~MainWidget() {
-  // Make sure the context is current when deleting the texture and the buffers.
-  makeCurrent();
-  delete texture;
+  makeCurrent(); // make sure the context is current when deleting the buffers
   delete geometries;
   doneCurrent();
 }
-
-void MainWidget::mousePressEvent(QMouseEvent* e) {
-//  mousePressPosition = QVector2D(e->localPos());
-}
-
-void MainWidget::mouseReleaseEvent(QMouseEvent* e) {
-//     // Mouse release position - mouse press position
-//     QVector2D diff = QVector2D(e->localPos()) - mousePressPosition;
-// 
-//     // Rotation axis is perpendicular to the mouse position difference
-//     // vector
-//     QVector3D n = QVector3D(diff.y(), diff.x(), 0.0).normalized();
-// 
-//     // Accelerate angular speed relative to the length of the mouse sweep
-//     qreal acc = diff.length() / 100.0;
-// 
-//     // Calculate new rotation axis as weighted sum
-//     rotationAxis = (rotationAxis * angularSpeed + n * acc).normalized();
-// 
-//     // Increase angular speed
-//     angularSpeed += acc;
-}
-
-// void MainWidget::timerEvent(QTimerEvent*) {
-//     angularSpeed *= 0.99; // decrease angular speed (friction)
-//     if (angularSpeed < 0.01) {
-//         angularSpeed = 0.0; // stop rotation when speed goes below threshold
-//     } else {
-//         rotation = QQuaternion::fromAxisAndAngle(rotationAxis, angularSpeed) * rotation;
-//         update();
-//     }
-// }
 
 void MainWidget::initializeGL() {
     initializeOpenGLFunctions();
@@ -105,29 +73,80 @@ void main() {
     close();
 }
 
+void MainWidget::paintGL() {
+  glClearColor(0.92f, 0.95f, 1.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);// | GL_DEPTH_BUFFER_BIT);
+
+  program.setUniformValue("ScaleParams", XOffset, YOffset, CoordScaleX, CoordScaleY);
+
+  geometries->drawCubeGeometry(&program);
+}
+
 void MainWidget::resizeGL(int w, int h) {
   int ScrW = w;
   int ScrH = h;
-  const auto [minX, maxX, minY, maxY] = geometries->getMinMaxCoords();
-  if (ScrW != 0 && ScrH != 0 && (maxX - minX) > 0) {
-    if (ScrH / ScrW < (maxY - minY) / (maxX - minX)) { // height limited
-      CoordScaleY = static_cast<float>(2.0 / (maxY - minY));
-      CoordScaleX = static_cast<float>(CoordScaleY * ScrH / ScrW);
-      YOffset = static_cast<float>((maxY + minY) / (maxY - minY));
-      XOffset = static_cast<float>((maxX + minX) / (maxY - minY) * ScrH / ScrW);
-    } else { // width limited
-      CoordScaleX = static_cast<float>(2.0 / (maxX - minX));
-      CoordScaleY = static_cast<float>(CoordScaleX * ScrW / ScrH);
-      YOffset = static_cast<float>((maxY + minY) / (maxX - minX) * ScrW / ScrH);
-      XOffset = static_cast<float>((maxX + minX) / (maxX - minX));
+
+  if (m_isZoomFit) {
+    const auto [minX, maxX, minY, maxY] = geometries->getMinMaxCoords();
+    if (ScrW != 0 && ScrH != 0 && (maxX - minX) > 0) {
+      if (ScrH / ScrW < (maxY - minY) / (maxX - minX)) { // height limited
+        CoordScaleY = static_cast<float>(2.0 / (maxY - minY));
+        CoordScaleX = static_cast<float>(CoordScaleY * ScrH / ScrW);
+        YOffset = static_cast<float>((maxY + minY) / (maxY - minY));
+        XOffset = static_cast<float>((maxX + minX) / (maxY - minY) * ScrH / ScrW);
+      } else { // width limited
+        CoordScaleX = static_cast<float>(2.0 / (maxX - minX));
+        CoordScaleY = static_cast<float>(CoordScaleX * ScrW / ScrH);
+        YOffset = static_cast<float>((maxY + minY) / (maxX - minX) * ScrW / ScrH);
+        XOffset = static_cast<float>((maxX + minX) / (maxX - minX));
+      }
     }
+  } else {
+    //TODO
   }
 }
 
-void MainWidget::paintGL() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+void MainWidget::wheelEvent(QWheelEvent* e) {
+  QPoint n = e->angleDelta();
+  const int dx = n.x();
+  const int dy = n.y();
+  const int d = (abs(dx) > abs(dy)) ? dx : dy;
 
-    program.setUniformValue("ScaleParams", XOffset, YOffset, CoordScaleX, CoordScaleY);
+  const double zoom = (d > 0)? 1.2 : 1.0/1.2;
 
-    geometries->drawCubeGeometry(&program);
+  // Screen coordinates of the cursor
+  QPoint pos = e->pos();
+
+  // Real coordinates for this cursor location
+  const double x = (pos.x()*2.0/width() - 1.0  + XOffset)/CoordScaleX;
+  const double y = (1.0 - pos.y()*2.0/height() + YOffset)/CoordScaleY;
+
+  XOffset += x*(zoom - 1.0)*CoordScaleX;
+  YOffset += y*(zoom - 1.0)*CoordScaleY;
+  CoordScaleX *= zoom;
+  CoordScaleY *= zoom;
+
+  update();
+}
+
+void MainWidget::mousePressEvent(QMouseEvent* e) {
+  mousePressPosition = QVector2D(e->localPos());
+  m_dragging = true;
+}
+
+void MainWidget::mouseReleaseEvent(QMouseEvent*) {
+  m_dragging = false;
+}
+
+void MainWidget::mouseMoveEvent(QMouseEvent* e) {
+  if (m_dragging) {
+    QVector2D newMousePos = QVector2D(e->localPos());
+    QVector2D diff = newMousePos - mousePressPosition;
+
+    XOffset -= 2.0f * diff.x() / width();
+    YOffset += 2.0f * diff.y() / height();
+     
+    mousePressPosition = std::move(newMousePos);
+    update();
+  }
 }

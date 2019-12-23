@@ -1,53 +1,46 @@
 #pragma once
 
-#include "geometryengine.h"
-
-#include <QOpenGLWidget>
 #include <QOpenGLFunctions>
-#include <QMatrix4x4>
-#include <QQuaternion>
-#include <QVector2D>
-#include <QBasicTimer>
 #include <QOpenGLShaderProgram>
-#include <QOpenGLTexture>
+#include <QOpenGLWidget>
+#include <QVector2D>
+
+class GeometryEngine;
 
 class GeometryEngine;
 
 class MainWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
-    Q_OBJECT
+  Q_OBJECT
 
 public:
-    explicit MainWidget(QWidget *parent = 0);
-    ~MainWidget();
+  explicit MainWidget(QWidget* parent = nullptr);
+  ~MainWidget();
 
 protected:
-    void mousePressEvent(QMouseEvent *e) override;
-    void mouseReleaseEvent(QMouseEvent *e) override;
-//    void timerEvent(QTimerEvent *e) override;
+  void mousePressEvent(QMouseEvent *e) override;
+  void mouseReleaseEvent(QMouseEvent *e) override;
+  void mouseMoveEvent(QMouseEvent* event) override;
+  void wheelEvent(QWheelEvent* event) override;
 
-    void initializeGL() override;
-    void resizeGL(int w, int h) override;
-    void paintGL() override;
+  void initializeGL() override;
+  void resizeGL(int w, int h) override;
+  void paintGL() override;
 
-    void initShaders();
-//    void initTextures();
+  void initShaders();
 
 private:
-    QBasicTimer timer;
-    QOpenGLShaderProgram program;
+  QOpenGLShaderProgram program;
 
-    GeometryEngine* geometries = nullptr;
-    QOpenGLTexture* texture = nullptr;
+  GeometryEngine* geometries = nullptr;
 
-    //QMatrix4x4  projection;
-    float XOffset = 0.0f;
-    float YOffset = 0.0f;
-    float CoordScaleX = 1.0f;
-    float CoordScaleY = 1.0f;
+  float XOffset = 0.0f;
+  float YOffset = 0.0f;
+  float CoordScaleX = 1.0f;
+  float CoordScaleY = 1.0f;
 
-//     QVector2D   mousePressPosition;
-//     QVector3D   rotationAxis;
-//     qreal       angularSpeed = 0.0;
-//     QQuaternion rotation;
+  bool m_isZoomFit = true;
+  bool m_dragging = false;
+
+  QVector2D   mousePressPosition;
 };

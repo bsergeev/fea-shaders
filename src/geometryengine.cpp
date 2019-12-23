@@ -84,25 +84,25 @@ void GeometryEngine::initCubeGeometry() {
   const double minS = 0.0, maxS = 4.0;
   // each element's 16 lines contain: x, y, stress
   const std::array<std::array<double, 48>, 60> element{ {
-      // Element 0
-      {
-      0.5, 0.0, 4.37169,
-      0.508020, 0.0, 4.17971,
-      0.516040, 0.0, 4.00216,
-      0.524060, 0.0, 3.83836,
-      0.499898, 0.0100846, 4.36675,
-      0.507855, 0.0101901, 4.17671,
-      0.515813, 0.0102956, 4.00069,
-      0.52377, 0.0104012, 3.83816,
-      0.499593, 0.0201650, 4.3498,
-      0.507555, 0.0203775, 4.16181,
-      0.515517, 0.0205899, 3.98742,
-      0.523479, 0.0208024, 3.82616,
-      0.499085, 0.0302372, 4.3217,
-      0.507120, 0.0305594, 4.1349,
-      0.515154, 0.0308815, 3.96203,
-      0.523189, 0.0312036, 3.80247
-      },
+    // Element 0
+    {
+    0.5, 0.0, 4.37169,
+    0.508020, 0.0, 4.17971,
+    0.516040, 0.0, 4.00216,
+    0.524060, 0.0, 3.83836,
+    0.499898, 0.0100846, 4.36675,
+    0.507855, 0.0101901, 4.17671,
+    0.515813, 0.0102956, 4.00069,
+    0.52377, 0.0104012, 3.83816,
+    0.499593, 0.0201650, 4.3498,
+    0.507555, 0.0203775, 4.16181,
+    0.515517, 0.0205899, 3.98742,
+    0.523479, 0.0208024, 3.82616,
+    0.499085, 0.0302372, 4.3217,
+    0.507120, 0.0305594, 4.1349,
+    0.515154, 0.0308815, 3.96203,
+    0.523189, 0.0312036, 3.80247
+    },
     // Element 1
     {
     0.524060, 0.0, 3.83836,
@@ -1289,11 +1289,11 @@ void GeometryEngine::initCubeGeometry() {
 
     // Transfer vertex data to VBO 0
     arrayBuf.bind();
-    arrayBuf.allocate(vertices.data(), (int)(vertices.size() * sizeof(float)));
+    arrayBuf.allocate(vertices.data(), static_cast<int>(vertices.size() * sizeof(float)));
 
     // Transfer index data to VBO 1
     indexBuf.bind();
-    indexBuf.allocate(indices.data(), indices.size() * sizeof(unsigned int));
+    indexBuf.allocate(indices.data(), static_cast<int>(indices.size() * sizeof(unsigned int)));
 }
 
 std::tuple<double, double, double, double> GeometryEngine::getMinMaxCoords() const {
@@ -1315,6 +1315,8 @@ void GeometryEngine::drawCubeGeometry(QOpenGLShaderProgram* program) {
     int colorLocation = program->attributeLocation("aColor");
     program->enableAttributeArray(colorLocation);
     program->setAttributeBuffer(colorLocation, GL_FLOAT, 3*sizeof(float), 3, 6*sizeof(float));
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // Draw cube geometry using indices from VBO 1
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(3 * 18 * numElems), GL_UNSIGNED_INT, 0);
