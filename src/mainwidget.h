@@ -32,7 +32,7 @@ protected:
 private:
   QOpenGLShaderProgram program;
 
-  GeometryEngine* geometries = nullptr;
+  GeometryEngine* model = nullptr;
 
   float XOffset = 0.0f;
   float YOffset = 0.0f;

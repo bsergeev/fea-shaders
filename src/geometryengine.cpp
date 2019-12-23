@@ -1,5 +1,6 @@
 #include "geometryengine.h"
 
+#include <QOpenGLShaderProgram>
 #include <QVector2D>
 #include <QVector3D>
 
@@ -72,7 +73,7 @@ GeometryEngine::GeometryEngine()
   indexBuf.create();
 
   // Initializes cube geometry and transfers it to VBOs
-  initCubeGeometry();
+  initModelGeometry();
 }
 
 GeometryEngine::~GeometryEngine() {
@@ -80,7 +81,7 @@ GeometryEngine::~GeometryEngine() {
   indexBuf.destroy();
 }
 
-void GeometryEngine::initCubeGeometry() {
+void GeometryEngine::initModelGeometry() {
   const double minS = 0.0, maxS = 4.0;
   // each element's 16 lines contain: x, y, stress
   const std::array<std::array<double, 48>, 60> element{ {
@@ -1287,13 +1288,13 @@ void GeometryEngine::initCubeGeometry() {
     }
   }
 
-    // Transfer vertex data to VBO 0
-    arrayBuf.bind();
-    arrayBuf.allocate(vertices.data(), static_cast<int>(vertices.size() * sizeof(float)));
+  // Transfer vertex data to VBO 0
+  arrayBuf.bind();
+  arrayBuf.allocate(vertices.data(), static_cast<int>(vertices.size() * sizeof(float)));
 
-    // Transfer index data to VBO 1
-    indexBuf.bind();
-    indexBuf.allocate(indices.data(), static_cast<int>(indices.size() * sizeof(unsigned int)));
+  // Transfer index data to VBO 1
+  indexBuf.bind();
+  indexBuf.allocate(indices.data(), static_cast<int>(indices.size() * sizeof(unsigned int)));
 }
 
 std::tuple<double, double, double, double> GeometryEngine::getMinMaxCoords() const {
@@ -1301,23 +1302,23 @@ std::tuple<double, double, double, double> GeometryEngine::getMinMaxCoords() con
 }
 
 
-void GeometryEngine::drawCubeGeometry(QOpenGLShaderProgram* program) {
-    // Tell OpenGL which VBOs to use
-    arrayBuf.bind();
-    indexBuf.bind();
+void GeometryEngine::drawModelGeometry(QOpenGLShaderProgram& program) {
+  // Tell OpenGL which VBOs to use
+  arrayBuf.bind();
+  indexBuf.bind();
 
-    // Tell OpenGL programmable pipeline how to locate vertex position data
-    int vertexLocation = program->attributeLocation("aPos");
-    program->enableAttributeArray(vertexLocation);
-    program->setAttributeBuffer(vertexLocation, GL_FLOAT, 0, 3, 6*sizeof(float));
+  // Tell OpenGL programmable pipeline how to locate vertex position data
+  int vertexLocation = program.attributeLocation("aPos");
+  program.enableAttributeArray(vertexLocation);
+  program.setAttributeBuffer(vertexLocation, GL_FLOAT, 0, 3, 6*sizeof(float));
 
-    // Tell OpenGL programmable pipeline how to locate vertex texture coordinate data
-    int colorLocation = program->attributeLocation("aColor");
-    program->enableAttributeArray(colorLocation);
-    program->setAttributeBuffer(colorLocation, GL_FLOAT, 3*sizeof(float), 3, 6*sizeof(float));
+  // Tell OpenGL programmable pipeline how to locate vertex color data
+  int colorLocation = program.attributeLocation("aColor");
+  program.enableAttributeArray(colorLocation);
+  program.setAttributeBuffer(colorLocation, GL_FLOAT, 3*sizeof(float), 3, 6*sizeof(float));
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    // Draw cube geometry using indices from VBO 1
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(3 * 18 * numElems), GL_UNSIGNED_INT, 0);
+  // Draw model using indices from VBO 1
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(3 * 18 * numElems), GL_UNSIGNED_INT, 0);
 }

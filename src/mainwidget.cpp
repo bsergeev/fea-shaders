@@ -13,24 +13,18 @@ MainWidget::MainWidget(QWidget* parent)
 
 MainWidget::~MainWidget() {
   makeCurrent(); // make sure the context is current when deleting the buffers
-  delete geometries;
+  delete model;
   doneCurrent();
 }
 
 void MainWidget::initializeGL() {
-    initializeOpenGLFunctions();
+  initializeOpenGLFunctions();
 
-    glClearColor(0, 0, 0, 1);
+  glClearColor(0, 0, 0, 1);
 
-    initShaders();
+  initShaders();
 
-//     glEnable(GL_DEPTH_TEST);
-//     glEnable(GL_CULL_FACE);
-
-    geometries = new GeometryEngine();
-
-    // Use QBasicTimer because its faster than QTimer
-//    timer.start(12, this);
+  model = new GeometryEngine();
 }
 
 void MainWidget::initShaders() {
@@ -75,11 +69,11 @@ void main() {
 
 void MainWidget::paintGL() {
   glClearColor(0.92f, 0.95f, 1.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);// | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT);
 
   program.setUniformValue("ScaleParams", XOffset, YOffset, CoordScaleX, CoordScaleY);
 
-  geometries->drawCubeGeometry(&program);
+  model->drawModelGeometry(program);
 }
 
 void MainWidget::resizeGL(int w, int h) {
@@ -87,7 +81,7 @@ void MainWidget::resizeGL(int w, int h) {
   int ScrH = h;
 
   if (m_isZoomFit) {
-    const auto [minX, maxX, minY, maxY] = geometries->getMinMaxCoords();
+    const auto [minX, maxX, minY, maxY] = model->getMinMaxCoords();
     if (ScrW != 0 && ScrH != 0 && (maxX - minX) > 0) {
       if (ScrH / ScrW < (maxY - minY) / (maxX - minX)) { // height limited
         CoordScaleY = static_cast<float>(2.0 / (maxY - minY));
@@ -140,8 +134,8 @@ void MainWidget::mouseReleaseEvent(QMouseEvent*) {
 
 void MainWidget::mouseMoveEvent(QMouseEvent* e) {
   if (m_dragging) {
-    QVector2D newMousePos = QVector2D(e->localPos());
-    QVector2D diff = newMousePos - mousePressPosition;
+    const auto newMousePos = QVector2D(e->localPos());
+    const QVector2D diff = newMousePos - mousePressPosition;
 
     XOffset -= 2.0f * diff.x() / width();
     YOffset += 2.0f * diff.y() / height();
