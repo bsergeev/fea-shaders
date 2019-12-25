@@ -3,7 +3,6 @@
 
 #include <QMouseEvent>
 
-#include <iostream> // <<< DEBUG
 #include <math.h>
 
 MainWidget::MainWidget(QWidget* parent)
@@ -13,7 +12,7 @@ MainWidget::MainWidget(QWidget* parent)
 
 MainWidget::~MainWidget() {
   makeCurrent(); // make sure the context is current when deleting the buffers
-  delete model;
+  delete m_model;
   doneCurrent();
 }
 
@@ -24,7 +23,7 @@ void MainWidget::initializeGL() {
 
   initShaders();
 
-  model = new GeometryEngine();
+  m_model = new GeometryEngine();
 }
 
 void MainWidget::initShaders() {
@@ -54,16 +53,16 @@ void main() {
   gl_FragColor = vec4(ourColor, 1.0f);
 })";
 
-  if (!program.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource))
+  if (!m_shaderProgram.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource))
     close();
 
-  if (!program.addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource))
+  if (!m_shaderProgram.addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource))
     close();
 
-  if (!program.link())
+  if (!m_shaderProgram.link())
     close();
 
-  if (!program.bind())
+  if (!m_shaderProgram.bind())
     close();
 }
 
@@ -71,43 +70,43 @@ void MainWidget::paintGL() {
   glClearColor(0.92f, 0.95f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  program.setUniformValue("ScaleParams", XOffset, YOffset, CoordScaleX, CoordScaleY);
+  m_shaderProgram.setUniformValue("ScaleParams", m_offsetX, m_offsetY, m_scaleX, m_scaleY);
 
-  model->drawModelGeometry(program);
+  m_model->drawModelGeometry(m_shaderProgram);
 }
 
 void MainWidget::fitAll() {
-  const auto [minX, maxX, minY, maxY] = model->getMinMaxCoords();
-  if (ScrW != 0 && ScrH != 0 && (maxX - minX) > 0) {
-    if (ScrH / ScrW < (maxY - minY) / (maxX - minX)) { // height limited
-      CoordScaleY = static_cast<float>(2.0 / (maxY - minY));
-      CoordScaleX = static_cast<float>(CoordScaleY * ScrH / ScrW);
-      YOffset = static_cast<float>((maxY + minY) / (maxY - minY));
-      XOffset = static_cast<float>((maxX + minX) / (maxY - minY) * ScrH / ScrW);
+  const auto [minX, maxX, minY, maxY] = m_model->getMinMaxCoords();
+  if (m_screenW != 0 && m_screenH != 0 && (maxX - minX) > 0) {
+    if (m_screenH / m_screenW < (maxY - minY) / (maxX - minX)) { // height limited
+      m_scaleY  = static_cast<float>(2.0 / (maxY - minY));
+      m_scaleX  = static_cast<float>(m_scaleY * m_screenH / m_screenW);
+      m_offsetY = static_cast<float>((maxY + minY) / (maxY - minY));
+      m_offsetX = static_cast<float>((maxX + minX) / (maxY - minY) * m_screenH / m_screenW);
     } else { // width limited
-      CoordScaleX = static_cast<float>(2.0 / (maxX - minX));
-      CoordScaleY = static_cast<float>(CoordScaleX * ScrW / ScrH);
-      YOffset = static_cast<float>((maxY + minY) / (maxX - minX) * ScrW / ScrH);
-      XOffset = static_cast<float>((maxX + minX) / (maxX - minX));
+      m_scaleX  = static_cast<float>(2.0 / (maxX - minX));
+      m_scaleY  = static_cast<float>(m_scaleX * m_screenW / m_screenH);
+      m_offsetY = static_cast<float>((maxY + minY) / (maxX - minX) * m_screenW / m_screenH);
+      m_offsetX = static_cast<float>((maxX + minX) / (maxX - minX));
     }
   }
   m_isZoomFit = true;
 }
 
 void MainWidget::resizeGL(int w, int h) {
-  const auto oldW = static_cast<double>(ScrW), 
-             oldH = static_cast<double>(ScrH);
-  ScrW = w;  ScrH = h;
+  const auto oldW = static_cast<double>(m_screenW), 
+             oldH = static_cast<double>(m_screenH);
+  m_screenW = w;  m_screenH = h;
 
   if (m_isZoomFit) {
     fitAll();
   } else {
     const double dh = oldH / static_cast<double>(h);
     const double dw = oldW / static_cast<double>(w);
-    CoordScaleX = static_cast<float>(dw * CoordScaleX);
-    CoordScaleY = static_cast<float>(dh * CoordScaleY);
-    XOffset     = static_cast<float>(dw * XOffset);
-    YOffset     = static_cast<float>(dh * YOffset);
+    m_scaleX  = static_cast<float>(dw * m_scaleX);
+    m_scaleY  = static_cast<float>(dh * m_scaleY);
+    m_offsetX = static_cast<float>(dw * m_offsetX);
+    m_offsetY = static_cast<float>(dh * m_offsetY);
   }
 }
 
@@ -119,17 +118,16 @@ void MainWidget::wheelEvent(QWheelEvent* e) {
 
   const double zoom = (d > 0)? 1.2 : 1.0/1.2;
 
-  // Screen coordinates of the cursor
-  QPoint pos = e->pos();
+  QPoint screenCursorPos = e->pos();
 
   // Real coordinates for this cursor location
-  const double x = (pos.x()*2.0/width() - 1.0  + XOffset)/CoordScaleX;
-  const double y = (1.0 - pos.y()*2.0/height() + YOffset)/CoordScaleY;
+  const double x = (screenCursorPos.x()*2.0/width() - 1.0  + m_offsetX) / m_scaleX;
+  const double y = (1.0 - screenCursorPos.y()*2.0/height() + m_offsetY) / m_scaleY;
 
-  XOffset += x*(zoom - 1.0)*CoordScaleX;
-  YOffset += y*(zoom - 1.0)*CoordScaleY;
-  CoordScaleX *= zoom;
-  CoordScaleY *= zoom;
+  m_offsetX += x*(zoom - 1.0)*m_scaleX;
+  m_offsetY += y*(zoom - 1.0)*m_scaleY;
+  m_scaleX  *= zoom;
+  m_scaleY  *= zoom;
 
   m_isZoomFit = false;
 
@@ -137,7 +135,7 @@ void MainWidget::wheelEvent(QWheelEvent* e) {
 }
 
 void MainWidget::mousePressEvent(QMouseEvent* e) {
-  mousePressPosition = QVector2D(e->localPos());
+  m_mousePressPosition = QVector2D(e->localPos());
   m_dragging = true;
 }
 
@@ -148,12 +146,12 @@ void MainWidget::mouseReleaseEvent(QMouseEvent*) {
 void MainWidget::mouseMoveEvent(QMouseEvent* e) {
   if (m_dragging) {
     auto newMousePos = QVector2D(e->localPos());
-    const QVector2D diff = newMousePos - mousePressPosition;
+    const QVector2D diff = newMousePos - m_mousePressPosition;
 
-    XOffset -= 2.0f * diff.x() / width();
-    YOffset += 2.0f * diff.y() / height();
+    m_offsetX -= 2.0f * diff.x() / width();
+    m_offsetY += 2.0f * diff.y() / height();
      
-    mousePressPosition = std::move(newMousePos);
+    m_mousePressPosition = std::move(newMousePos);
 
     m_isZoomFit = false;
 

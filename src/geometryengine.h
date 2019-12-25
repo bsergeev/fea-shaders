@@ -11,7 +11,7 @@ class GeometryEngine : protected QOpenGLFunctions
 {
 public:
     GeometryEngine();
-    virtual ~GeometryEngine();
+    ~GeometryEngine();
 
     std::tuple<double, double, double, double> getMinMaxCoords() const;
     void drawModelGeometry(QOpenGLShaderProgram& program);
@@ -19,12 +19,12 @@ public:
 private:
     void initModelGeometry();
 
-    QOpenGLBuffer arrayBuf;
-    QOpenGLBuffer indexBuf;
+    QOpenGLBuffer m_arrayBuf;
+    QOpenGLBuffer m_indexBuf;
 
-    size_t numElems = 0;
-    double minX = 0.0;
-    double maxX = 1.0;
-    double minY = 0.0;
-    double maxY = 2.0;
+    size_t m_numElems = 0;
+    double m_minX = 0.0;
+    double m_maxX = 0.0;
+    double m_minY = 0.0;
+    double m_maxY = 0.0;
 };

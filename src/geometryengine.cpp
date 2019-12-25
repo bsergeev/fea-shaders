@@ -1,8 +1,6 @@
 #include "geometryengine.h"
 
 #include <QOpenGLShaderProgram>
-#include <QVector2D>
-#include <QVector3D>
 
 #include <algorithm>
 #include <array>
@@ -66,20 +64,19 @@ private:
 } // anonymous namespace
 
 GeometryEngine::GeometryEngine()
-  : indexBuf(QOpenGLBuffer::IndexBuffer) 
+  : m_indexBuf(QOpenGLBuffer::IndexBuffer) 
 {
   initializeOpenGLFunctions();
 
-  arrayBuf.create();
-  indexBuf.create();
+  m_arrayBuf.create();
+  m_indexBuf.create();
 
-  // Initializes cube geometry and transfers it to VBOs
   initModelGeometry();
 }
 
 GeometryEngine::~GeometryEngine() {
-  arrayBuf.destroy();
-  indexBuf.destroy();
+  m_arrayBuf.destroy();
+  m_indexBuf.destroy();
 }
 
 void GeometryEngine::initModelGeometry() {
@@ -1227,31 +1224,32 @@ void GeometryEngine::initModelGeometry() {
     0.0, 2.0, 0.995377
     }
   } };
-  numElems = element.size();
+  m_numElems = element.size();
 
   static std::vector<float> vertices;
-  vertices.reserve(16 * 6 * numElems);
+  vertices.reserve(16 * 6 * m_numElems);
 
   static std::vector<unsigned int> indices;
-  indices.reserve(18 * 3 * numElems);
+  indices.reserve(18 * 3 * m_numElems);
 
   // Find the bounding box
-  for (size_t elemIdx = 0; elemIdx < numElems; ++elemIdx) {
+  for (size_t elemIdx = 0; elemIdx < m_numElems; ++elemIdx) {
     const auto& e = element[elemIdx];
     for (size_t i = 0; i < 48; i += 3) {
       const double x = e[i];
       const double y = e[i + 1];
-      if (minX > x) { minX = x; }
-      if (maxX < x) { maxX = x; }
-      if (minY > y) { minY = y; }
-      if (maxY < y) { maxY = y; }
+      if (m_minX > x) { m_minX = x; }
+      if (m_maxX < x) { m_maxX = x; }
+      if (m_minY > y) { m_minY = y; }
+      if (m_maxY < y) { m_maxY = y; }
     }
   }
-  const double dx = (maxX - minX) / 20.0, dy = (maxY - minY) / 20.0;
-  maxX += dx;  minX -= dx;  maxY += dy;  minY -= dy;
+  // Increase the bounding box by 10% on each side
+  const double dx = (m_maxX - m_minX) / 20.0, dy = (m_maxY - m_minY) / 20.0;
+  m_maxX += dx;  m_minX -= dx;  m_maxY += dy;  m_minY -= dy;
 
   // Gather vertices
-  for (size_t elemIdx = 0; elemIdx < numElems; ++elemIdx) {
+  for (size_t elemIdx = 0; elemIdx < m_numElems; ++elemIdx) {
     const auto& e = element[elemIdx];
     for (size_t i = 0; i < 48; i += 3) {
       const float x = static_cast<float>(e[i]);
@@ -1290,36 +1288,36 @@ void GeometryEngine::initModelGeometry() {
   }
 
   // Transfer vertex data to VBO 0
-  arrayBuf.bind();
-  arrayBuf.allocate(vertices.data(), static_cast<int>(vertices.size() * sizeof(float)));
+  m_arrayBuf.bind();
+  m_arrayBuf.allocate(vertices.data(), static_cast<int>(vertices.size() * sizeof(float)));
 
   // Transfer index data to VBO 1
-  indexBuf.bind();
-  indexBuf.allocate(indices.data(), static_cast<int>(indices.size() * sizeof(unsigned int)));
+  m_indexBuf.bind();
+  m_indexBuf.allocate(indices.data(), static_cast<int>(indices.size() * sizeof(unsigned int)));
 }
 
 std::tuple<double, double, double, double> GeometryEngine::getMinMaxCoords() const {
-  return std::make_tuple(minX, maxX, minY, maxY);
+  return std::make_tuple(m_minX, m_maxX, m_minY, m_maxY);
 }
 
 
 void GeometryEngine::drawModelGeometry(QOpenGLShaderProgram& program) {
   // Tell OpenGL which VBOs to use
-  arrayBuf.bind();
-  indexBuf.bind();
+  m_arrayBuf.bind();
+  m_indexBuf.bind();
 
   // Tell OpenGL programmable pipeline how to locate vertex position data
-  int vertexLocation = program.attributeLocation("aPos");
+  const int vertexLocation = program.attributeLocation("aPos");
   program.enableAttributeArray(vertexLocation);
   program.setAttributeBuffer(vertexLocation, GL_FLOAT, 0, 3, 6*sizeof(float));
 
   // Tell OpenGL programmable pipeline how to locate vertex color data
-  int colorLocation = program.attributeLocation("aColor");
+  const int colorLocation = program.attributeLocation("aColor");
   program.enableAttributeArray(colorLocation);
   program.setAttributeBuffer(colorLocation, GL_FLOAT, 3*sizeof(float), 3, 6*sizeof(float));
 
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
   // Draw model using indices from VBO 1
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(3 * 18 * numElems), GL_UNSIGNED_INT, 0);
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(3 * 18 * m_numElems), GL_UNSIGNED_INT, 0);
 }
