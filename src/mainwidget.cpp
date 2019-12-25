@@ -80,12 +80,12 @@ void MainWidget::fitAll() {
   if (m_screenW != 0 && m_screenH != 0 && (maxX - minX) > 0) {
     if (m_screenH / m_screenW < (maxY - minY) / (maxX - minX)) { // height limited
       m_scaleY  = static_cast<float>(2.0 / (maxY - minY));
-      m_scaleX  = static_cast<float>(m_scaleY * m_screenH / m_screenW);
+      m_scaleX  = m_scaleY * static_cast<float>(m_screenH) / static_cast<float>(m_screenW);
       m_offsetY = static_cast<float>((maxY + minY) / (maxY - minY));
       m_offsetX = static_cast<float>((maxX + minX) / (maxY - minY) * m_screenH / m_screenW);
     } else { // width limited
       m_scaleX  = static_cast<float>(2.0 / (maxX - minX));
-      m_scaleY  = static_cast<float>(m_scaleX * m_screenW / m_screenH);
+      m_scaleY  = m_scaleX * static_cast<float>(m_screenW) / static_cast<float>(m_screenH);
       m_offsetY = static_cast<float>((maxY + minY) / (maxX - minX) * m_screenW / m_screenH);
       m_offsetX = static_cast<float>((maxX + minX) / (maxX - minX));
     }
@@ -94,19 +94,19 @@ void MainWidget::fitAll() {
 }
 
 void MainWidget::resizeGL(int w, int h) {
-  const auto oldW = static_cast<double>(m_screenW), 
-             oldH = static_cast<double>(m_screenH);
+  const auto oldW = static_cast<float>(m_screenW),
+             oldH = static_cast<float>(m_screenH);
   m_screenW = w;  m_screenH = h;
 
   if (m_isZoomFit) {
     fitAll();
   } else {
-    const double dh = oldH / static_cast<double>(h);
-    const double dw = oldW / static_cast<double>(w);
-    m_scaleX  = static_cast<float>(dw * m_scaleX);
-    m_scaleY  = static_cast<float>(dh * m_scaleY);
-    m_offsetX = static_cast<float>(dw * m_offsetX);
-    m_offsetY = static_cast<float>(dh * m_offsetY);
+    const float dh = oldH / static_cast<float>(h);
+    const float dw = oldW / static_cast<float>(w);
+    m_scaleX  *= dw;
+    m_scaleY  *= dh;
+    m_offsetX *= dw;
+    m_offsetY *= dh;
   }
 }
 
@@ -116,16 +116,16 @@ void MainWidget::wheelEvent(QWheelEvent* e) {
   const int dy = n.y();
   const int d = (abs(dx) > abs(dy)) ? dx : dy;
 
-  const double zoom = (d > 0)? 1.2 : 1.0/1.2;
+  const float zoom = (d > 0)? 1.2f : 1.0f/1.2f;
 
   QPoint screenCursorPos = e->pos();
 
   // Real coordinates for this cursor location
-  const double x = (screenCursorPos.x()*2.0/width() - 1.0  + m_offsetX) / m_scaleX;
-  const double y = (1.0 - screenCursorPos.y()*2.0/height() + m_offsetY) / m_scaleY;
+  const float x = (static_cast<float>(screenCursorPos.x())*2.0f/static_cast<float>(m_screenW) - 1.0f  + m_offsetX) / m_scaleX;
+  const float y = (1.0f - static_cast<float>(screenCursorPos.y())*2.0f/static_cast<float>(m_screenH)  + m_offsetY) / m_scaleY;
 
-  m_offsetX += x*(zoom - 1.0)*m_scaleX;
-  m_offsetY += y*(zoom - 1.0)*m_scaleY;
+  m_offsetX += x*(zoom - 1.0f)*m_scaleX;
+  m_offsetY += y*(zoom - 1.0f)*m_scaleY;
   m_scaleX  *= zoom;
   m_scaleY  *= zoom;
 
@@ -148,8 +148,8 @@ void MainWidget::mouseMoveEvent(QMouseEvent* e) {
     auto newMousePos = QVector2D(e->localPos());
     const QVector2D diff = newMousePos - m_mousePressPosition;
 
-    m_offsetX -= 2.0f * diff.x() / width();
-    m_offsetY += 2.0f * diff.y() / height();
+    m_offsetX -= 2.0f * diff.x() / static_cast<float>(m_screenW);
+    m_offsetY += 2.0f * diff.y() / static_cast<float>(m_screenH);
      
     m_mousePressPosition = std::move(newMousePos);
 
