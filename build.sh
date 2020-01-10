@@ -10,7 +10,7 @@ echo Project name: ${APP_NAME}
 
 BUILD_CONFIGURATION=Debug
 if [ "$2" = "Release" ] || [ "$2" = "Debug" ]; then
-  BUILD_CONFIGURATION="$1"
+  BUILD_CONFIGURATION="$2"
 fi
 
 # Detect the OS
