@@ -38,7 +38,7 @@ cd $BUILD_DIRECTORY
 if [ "$OS_NAME" = "Linux" ]; then
   cmake -G "Ninja" -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION .. && ninja
 elif [ "$OS_NAME" = "Windows" ]; then
-  cmake -A x64 -DQt5_DIR=c:/Frameworks/Qt/5.13.2/msvc2017_64/lib/cmake/Qt5 -DTARGET_NAME:STRING="$APP_NAME" ..
+  cmake -A x64 -DQt5_DIR=c:/Frameworks/Qt/5.14.0/msvc2017_64/lib/cmake/Qt5 -DTARGET_NAME:STRING="$APP_NAME" ..
   cmake --build . --config $BUILD_CONFIGURATION
 fi
 

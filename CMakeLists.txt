@@ -47,33 +47,16 @@ if (WIN32 OR WIN64)
     Qt5::Widgets Qt5::OpenGL
     opengl32
   )
-  #-----------------------------------------------------------------------------
-  # Everything below is merely for copying Qt DLLs to the EXE location
-  set(QT_BIN_LOCATION "${Qt5_DIR}/../../../bin")
-  set(USED_QT_MODULES  Core Gui Widgets OpenGL)
-  set (CustomCommands)
-  macro(add_copy_commands _file_list)
-    set(_destination $<TARGET_FILE_DIR:${APP_NAME}>)
-    foreach(_fn ${${_file_list}})
-      set(COMMAND ${ARGN} ${CMAKE_COMMAND} -E copy_if_different ${_fn} ${_destination} "\n")
-      list(APPEND CustomCommands ${COMMAND})
-    endforeach()
-  endmacro()
-  
-  # Qt files based on the list of modules used are placed in the target directory.
-  set(Debug_Resources)
-  set(Optimized_Resources)
-  foreach (qtlib ${USED_QT_MODULES})
-    list(APPEND Debug_Resources     ${QT_BIN_LOCATION}/Qt5${qtlib}d.dll)
-    list(APPEND Optimized_Resources ${QT_BIN_LOCATION}/Qt5${qtlib}.dll)
-  endforeach(qtlib)
-  
-  add_copy_commands(Debug_Resources     if $<CONFIGURATION> == Debug)
-  add_copy_commands(Optimized_Resources if $<CONFIGURATION> == Release)
-  
-  # Finally create the custom command as a post-build step.
-  add_custom_command(TARGET ${APP_NAME} POST_BUILD COMMAND ${CustomCommands})
-  #-----------------------------------------------------------------------------
+  get_target_property(_qmake_executable Qt5::qmake IMPORTED_LOCATION)
+  get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
+  find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
+  add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E
+        env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
+            --verbose 0
+            --no-compiler-runtime
+            \"$<TARGET_FILE:${TARGET_NAME}>\"
+    COMMENT "Deploying Qt...")
 else() # Linux
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") #  -stdlib=libc++
   target_link_libraries(${APP_NAME} project_options 
