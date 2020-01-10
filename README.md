@@ -14,4 +14,4 @@ To build the app in Windows or Linux, run `./build.sh` in Bash (on Windows, use 
   
 The resulting executable will be in _build.Linux_ or _build.Windows_.  
 
-IMPORTANT: On Windows, it's better to pass your Qt location to CMake by editing _build.sh_ to contain the right pass as the value of `Qt5_DIR` in line 41.  
+IMPORTANT: On Windows, it's better to pass your Qt location to CMake by editing _build.sh_ to contain the right path as the value of `Qt5_DIR` in line 41.  
