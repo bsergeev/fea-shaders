@@ -50,12 +50,12 @@ if (WIN32 OR WIN64)
   get_target_property(_qmake_executable Qt5::qmake IMPORTED_LOCATION)
   get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
   find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
-  add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+  add_custom_command(TARGET ${APP_NAME} POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E
         env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
             --verbose 0
             --no-compiler-runtime
-            \"$<TARGET_FILE:${TARGET_NAME}>\"
+            \"$<TARGET_FILE:${APP_NAME}>\"
     COMMENT "Deploying Qt...")
 else() # Linux
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") #  -stdlib=libc++
